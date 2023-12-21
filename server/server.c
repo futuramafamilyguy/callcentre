@@ -6,6 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 
+char* concat(const char *s1, const char *s2);
+
 int main() {
 
     const char *port = "3000";
@@ -71,7 +73,16 @@ int main() {
     inc_fd = accept(fd, (struct sockaddr *)&inc_addr, &addr_size);
 
     char inc_msg[100];
-    recv(inc_fd, inc_msg, 100, 0);
+    char* out_msg;
+    int out_msg_len;
+
+    while (recv(inc_fd, inc_msg, 100, 0)) {
+        out_msg = concat(inc_msg, "herp");
+        out_msg_len = strlen(out_msg);
+        send(inc_fd, out_msg, out_msg_len, 0);
+        free(out_msg);
+    }
+    
     printf("received msg: %s\n", inc_msg);
 
     close(fd);
@@ -80,4 +91,12 @@ int main() {
     free(res);
 
     return 0;
+}
+
+char* concat(const char *s1, const char *s2) {
+    char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+    // in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
 }

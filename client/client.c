@@ -63,6 +63,9 @@ int main(int argc, char** argv) {
 
         msg_len = strlen(buffer);
         send(fd, buffer, msg_len, 0);
+
+        recv(fd, buffer, 100, 0);
+        printf("chatgpt: %s\n", buffer);
     }
 
     close(fd);
