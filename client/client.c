@@ -43,12 +43,25 @@ int main(int argc, char** argv) {
         // error handling
     }
 
-    char *msg = argv[2];
-    int msg_len, bytes_sent;
-    msg_len = strlen(msg);
+    char *name = argv[2];
+    char buffer[100];
+    int msg_len;
 
-    bytes_sent = send(fd, msg, msg_len, 0);
-    printf("%d out of %d byts sent\n", bytes_sent, msg_len);
+    printf("send msg to start chatting\n");
+    while(1) {
+        printf("%s: ", name);
+        fgets(buffer, sizeof(buffer), stdin);
+        if (buffer[strlen(buffer) - 1] == '\n') {
+            buffer[strlen(buffer) - 1] = '\0';
+        }
+
+        if (strcmp(buffer, "exit")) {
+            break;
+        }
+
+        msg_len = strlen(buffer);
+        send(fd, buffer, msg_len, 0);
+    }
 
     close(fd);
 
