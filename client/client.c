@@ -40,7 +40,9 @@ int main(int argc, char** argv) {
     }
 
     if (connect(fd, p->ai_addr, p->ai_addrlen) == -1) {
-        // error handling
+        perror("connect");
+        close(fd);
+        exit(EXIT_FAILURE);
     }
 
     char *name = argv[2];
@@ -55,7 +57,7 @@ int main(int argc, char** argv) {
             buffer[strlen(buffer) - 1] = '\0';
         }
 
-        if (strcmp(buffer, "exit")) {
+        if (!strcmp(buffer, "exit")) {
             break;
         }
 
