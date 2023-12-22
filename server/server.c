@@ -5,10 +5,22 @@
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 char* concat(const char *s1, const char *s2);
 
 int main() {
+    
+    char * responses[] = {
+        "go google it",
+        "booking office for gondolas and punting is just on the right",
+        "move to melbourne and dont come back",
+        "without darkness there is no light",
+        "aot s2 is the best season change my mind",
+        "check out my tumblr"
+    };
+
+    srand(time(NULL));
 
     const char *port = "3000";
 
@@ -72,15 +84,19 @@ int main() {
     socklen_t addr_size = sizeof(struct sockaddr_storage);
     inc_fd = accept(fd, (struct sockaddr *)&inc_addr, &addr_size);
 
-    char inc_msg[100];
-    char* out_msg;
+    char inc_msg[1024];
+    char *out_msg;
     int out_msg_len;
+    memset(&inc_msg, 0, sizeof inc_msg);
 
-    while (recv(inc_fd, inc_msg, 100, 0)) {
-        out_msg = concat(inc_msg, "herp");
+    while (recv(inc_fd, inc_msg, 1024, 0)) {
+        memset(&out_msg, 0, sizeof out_msg);
+        char *resp = responses[rand() % sizeof(responses)/sizeof(responses[0])];
+        out_msg = concat(inc_msg, resp);
         out_msg_len = strlen(out_msg);
         send(inc_fd, out_msg, out_msg_len, 0);
         free(out_msg);
+        memset(&inc_msg, 0, sizeof inc_msg);
     }
     
     printf("received msg: %s\n", inc_msg);
@@ -94,9 +110,10 @@ int main() {
 }
 
 char* concat(const char *s1, const char *s2) {
-    char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+    char *result = malloc(strlen(s1) + strlen(s2) + 3); // +1 for the null-terminator
     // in real code you would check for errors in malloc here
     strcpy(result, s1);
+    strcat(result, "? ");
     strcat(result, s2);
     return result;
 }

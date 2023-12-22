@@ -46,11 +46,12 @@ int main(int argc, char** argv) {
     }
 
     char *name = argv[2];
-    char buffer[100];
+    char buffer[1024];
     int msg_len;
 
     printf("send msg to start chatting\n");
     while(1) {
+        memset(&buffer, 0, sizeof buffer);
         printf("%s: ", name);
         fgets(buffer, sizeof(buffer), stdin);
         if (buffer[strlen(buffer) - 1] == '\n') {
@@ -64,7 +65,7 @@ int main(int argc, char** argv) {
         msg_len = strlen(buffer);
         send(fd, buffer, msg_len, 0);
 
-        recv(fd, buffer, 100, 0);
+        recv(fd, buffer, 1024, 0);
         printf("chatgpt: %s\n", buffer);
     }
 
