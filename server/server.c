@@ -82,28 +82,36 @@ int main() {
     int inc_fd;
     struct sockaddr_storage inc_addr;
     socklen_t addr_size = sizeof(struct sockaddr_storage);
-    inc_fd = accept(fd, (struct sockaddr *)&inc_addr, &addr_size);
 
     char inc_msg[1024];
     char *out_msg;
     int out_msg_len;
     memset(&inc_msg, 0, sizeof inc_msg);
 
-    while (recv(inc_fd, inc_msg, 1024, 0)) {
-        memset(&out_msg, 0, sizeof out_msg);
-        char *resp = responses[rand() % sizeof(responses)/sizeof(responses[0])];
-        out_msg = concat(inc_msg, resp);
-        out_msg_len = strlen(out_msg);
-        send(inc_fd, out_msg, out_msg_len, 0);
-        free(out_msg);
-        memset(&inc_msg, 0, sizeof inc_msg);
+    while (1) {
+        inc_fd = accept(fd, (struct sockaddr *)&inc_addr, &addr_size);
+        printf("new connection recvd\n");
+
+        if (!fork()) {
+            close(fd);
+            while (recv(inc_fd, inc_msg, 1024, 0)) {
+                memset(&out_msg, 0, sizeof out_msg);
+                char *resp = responses[rand() % sizeof(responses)/sizeof(responses[0])];
+                out_msg = concat(inc_msg, resp);
+                out_msg_len = strlen(out_msg);
+                send(inc_fd, out_msg, out_msg_len, 0);
+                free(out_msg);
+                memset(&inc_msg, 0, sizeof inc_msg);
+            }
+
+            close(inc_fd);
+            exit(0);
+        }
     }
     
     printf("received msg: %s\n", inc_msg);
 
     close(fd);
-    close(inc_fd);
-
     free(res);
 
     return 0;
