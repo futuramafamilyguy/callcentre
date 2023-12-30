@@ -5,11 +5,20 @@
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
+#include <poll.h>
 
 #define HOST "localhost"
 #define PORT "3000"
 
-int get_server_socket(char *host, char *port) {
+#define FD_COUNT 2
+#define FD_STDIN 0
+
+#define BUF_SIZE 256
+
+int get_server_socket(char *host, char *port); 
+
+int get_server_socket(char *host, char *port)
+{
     int sock, rv;
     struct addrinfo hints, *res, *p;
 
@@ -32,53 +41,73 @@ int get_server_socket(char *host, char *port) {
         break;
     }
 
+    if (connect(sock, p->ai_addr, p->ai_addrlen) == -1) {
+        perror("connect");
+        close(sock);
+        exit(1);
+    }
+
     free(res);
 
     return sock;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     
     if (argc < 2) {
         printf("missing argument\n");
         exit(-1);
     }
 
-    int serverfd = get_server_socket();
+    int serverfd;
+    char *username;
+    char buf[BUF_SIZE];
+    struct pollfd *pfds = malloc(sizeof *pfds * FD_COUNT);
 
-    if (connect(serverfd, p->ai_addr, p->ai_addrlen) == -1) {
-        perror("connect");
-        close(serverfd);
-        exit(EXIT_FAILURE);
-    }
+    serverfd = get_server_socket(HOST, PORT);
+    username = argv[1];
 
-    char *name = argv[2];
-    char buffer[1024];
-    int msg_len;
+    pfds[0].fd = FD_STDIN;
+    pfds[0].events = POLLIN;
+    pfds[1].fd = serverfd;
+    pfds[1].events = POLLIN;
 
-    printf("send msg to start chatting\n");
-    while(1) {
-        memset(&buffer, 0, sizeof buffer);
-        printf("%s: ", name);
-        fgets(buffer, sizeof(buffer), stdin);
-        if (buffer[strlen(buffer) - 1] == '\n') {
-            buffer[strlen(buffer) - 1] = '\0';
+    while (1) {
+        int poll_count = poll(pfds, FD_COUNT, -1);
+
+        if (poll_count == -1) {
+            perror("poll");
+            exit(1);
         }
 
-        if (!strcmp(buffer, "exit")) {
-            break;
+        for(int i = 0; i < FD_COUNT; i++) {
+
+            if (pfds[i].revents & POLLIN) {
+                if (pfds[i].fd == FD_STDIN) { // if user input from stdin then we send data
+                    int msg_len;
+
+                    memset(&buf, 0, sizeof buf);
+                    fgets(buf, sizeof(buf), stdin);
+
+                    if (buf[strlen(buf) - 1] == '\n') {
+                        buf[strlen(buf) - 1] = '\0';
+                    }
+
+                    if (!strcmp(buf, "exit")) {
+                        close(serverfd);
+                        exit(0);
+                    }
+
+                    msg_len = strlen(buf);
+                    send(serverfd, buf, msg_len, 0);
+                } else { // if receive data from server socket then we display
+                    recv(serverfd, buf, BUF_SIZE, 0);
+                    printf("chatgpt: %s\n", buf);
+                }
+            }
         }
-
-        msg_len = strlen(buffer);
-        send(serverfd, buffer, msg_len, 0);
-
-        recv(serverfd, buffer, 1024, 0);
-        printf("chatgpt: %s\n", buffer);
     }
-
-    close(fd);
-
-    free(res);
 
     return 0;
 }
