@@ -82,6 +82,9 @@ int main(int argc, char** argv)
         }
 
         for(int i = 0; i < FD_COUNT; i++) {
+            if (poll_count == 0) {
+                break;
+            }
 
             if (pfds[i].revents & POLLIN) {
                 if (pfds[i].fd == FD_STDIN) { // if user input from stdin then we send data
@@ -89,7 +92,6 @@ int main(int argc, char** argv)
 
                     memset(&buf, 0, sizeof buf);
                     fgets(buf, sizeof(buf), stdin);
-
                     if (buf[strlen(buf) - 1] == '\n') {
                         buf[strlen(buf) - 1] = '\0';
                     }
@@ -99,12 +101,15 @@ int main(int argc, char** argv)
                         exit(0);
                     }
 
+                    printf("%s: %s\n", argv[1], buf);
                     msg_len = strlen(buf);
                     send(serverfd, buf, msg_len, 0);
                 } else { // if receive data from server socket then we display
                     recv(serverfd, buf, BUF_SIZE, 0);
                     printf("chatgpt: %s\n", buf);
                 }
+                
+                poll_count--;
             }
         }
     }
