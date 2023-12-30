@@ -6,42 +6,49 @@
 #include <string.h>
 #include <unistd.h>
 
-int main(int argc, char** argv) {
-    
-    if (argc < 3) {
-        printf("missing argument\n");
-        exit(-1);
-    }
+#define HOST "localhost"
+#define PORT "3000"
 
-    printf("connecting to %s\n", argv[1]);
-
+int get_server_socket(char *host, char *port) {
+    int sock, rv;
     struct addrinfo hints, *res, *p;
-    int status, fd;
-    char ipstring[INET6_ADDRSTRLEN];
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    status = getaddrinfo(argv[1], "3000", &hints, &res);
+    if ((rv = getaddrinfo(host, port, &hints, &res)) != 0) {
+        fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
+        exit(1);
+    }
 
-    struct sockaddr *sa = res->ai_addr;
-    
     for (p = res; p != NULL; p = p->ai_next) {
-        fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (fd == -1) {
-            // error handling
+        sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 
-            perror("socket");  // Print the error message to stderr
+        if (sock == -1) {
             continue;
         }
 
         break;
     }
 
-    if (connect(fd, p->ai_addr, p->ai_addrlen) == -1) {
+    free(res);
+
+    return sock;
+}
+
+int main(int argc, char** argv) {
+    
+    if (argc < 2) {
+        printf("missing argument\n");
+        exit(-1);
+    }
+
+    int serverfd = get_server_socket();
+
+    if (connect(serverfd, p->ai_addr, p->ai_addrlen) == -1) {
         perror("connect");
-        close(fd);
+        close(serverfd);
         exit(EXIT_FAILURE);
     }
 
@@ -63,9 +70,9 @@ int main(int argc, char** argv) {
         }
 
         msg_len = strlen(buffer);
-        send(fd, buffer, msg_len, 0);
+        send(serverfd, buffer, msg_len, 0);
 
-        recv(fd, buffer, 1024, 0);
+        recv(serverfd, buffer, 1024, 0);
         printf("chatgpt: %s\n", buffer);
     }
 
