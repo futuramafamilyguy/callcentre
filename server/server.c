@@ -11,7 +11,9 @@
 
 #define MAX_CONN 5
 
-char* concat(const char *s1, const char *s2);
+#define FD_STDIN 0
+
+#define BUF_SIZE 256
 
 int get_listener_socket(char *port)
 {
@@ -43,7 +45,7 @@ int get_listener_socket(char *port)
     }
 
     if (listen(sock, MAX_CONN) == -1) {
-        return -1
+        return -1;
     }
 
     free(res);
@@ -53,7 +55,7 @@ int get_listener_socket(char *port)
 
 int add_pfd(struct pollfd pfds[], int newfd, int *fd_count, int fd_size)
 {
-    if (*fd_count == *fd_size) {
+    if (*fd_count == fd_size) {
         return 1;
     }
 
@@ -66,84 +68,65 @@ int add_pfd(struct pollfd pfds[], int newfd, int *fd_count, int fd_size)
 
 void rm_pfd(struct pollfd pfds[], int i, int *fd_count)
 {
-    pfds[i].fd = pfds[*fd_count - 1].fd;
+    pfds[i] = pfds[*fd_count - 1];
     (*fd_count)--;
 }
 
 int main() {
 
     int listenerfd;
-    int fd_count = 0
-    int fd_size = MAX_CONN + 1;
-    struct pollfd *pdfs = malloc(sizeof(struct pollfd) * fd_size);
+    int fd_count = 0;
+    int fd_size = MAX_CONN + 2; // 5 inc connections + listener and stdin
+    struct pollfd *pfds = malloc(sizeof(struct pollfd) * fd_size);
+
+    char buf[BUF_SIZE];
 
     listenerfd = get_listener_socket(PORT);
-    pdfs = 
+    add_pfd(pfds, listenerfd, &fd_count, fd_size); // add listener
+    add_pfd(pfds, FD_STDIN, &fd_count, fd_size); // add stdin
 
-
-
-
-    free(pdfs);
-
-
-    
-
-    int inc_fd;
-    struct sockaddr_storage inc_addr;
-    socklen_t addr_size = sizeof(struct sockaddr_storage);
-
-    char inc_msg[1024];
-    char *out_msg;
-    int out_msg_len;
-    memset(&inc_msg, 0, sizeof inc_msg);
-
-
-        inc_fd = accept(fd, (struct sockaddr *)&inc_addr, &addr_size);
-        printf("new connection recvd\n");
-
- 
-            close(fd);
-            // while (recv(inc_fd, inc_msg, 1024, 0)) {
-            //     memset(&out_msg, 0, sizeof out_msg);
-            //     char *resp = responses[rand() % sizeof(responses)/sizeof(responses[0])];
-            //     out_msg = concat(inc_msg, resp);
-            //     out_msg_len = strlen(out_msg);
-            //     send(inc_fd, out_msg, out_msg_len, 0);
-            //     free(out_msg);
-            //     memset(&inc_msg, 0, sizeof inc_msg);
-            // }
-            recv(inc_fd, inc_msg, 1024, 0);
     while(1) {
-printf("sending...\n");
-                out_msg = "Hello world";
-                out_msg_len = strlen(out_msg);
-                send(inc_fd, out_msg, out_msg_len, 0);
-                printf("sending...\n");
-                sleep(3);
+        int poll_count = poll(pfds, fd_count, -1);
+
+        if (poll_count == -1) {
+            perror("poll");
+            exit(1);
+        }
+
+        for(int i = 0; i < fd_count; i++) {
+            if (poll_count == 0) {
+                break;
+            }
+
+            if (pfds[i].revents & POLLIN) {
+                if (pfds[i].fd == listenerfd) { // if data is from listener then add new fd to be polled
+                    printf("connection revd\n");
+                    struct sockaddr_storage inc_addr;
+                    socklen_t addr_size = sizeof(struct sockaddr_storage);
+
+                    int incfd = accept(listenerfd, (struct sockaddr *)&inc_addr, &addr_size);
+                    if (add_pfd(pfds, incfd, &fd_count, fd_size) == 1) {
+                        printf("connections full so rejecting\n");
+                        close(incfd);
+                    }
+                } else { // if data is from client socket then display
+                    int senderfd = pfds[i].fd;
+                    int bytes = recv(senderfd, buf, BUF_SIZE, 0);
+
+                    if (bytes <= 0) {
+                        printf("something happened goodbye sender %d\n", senderfd);
+                        rm_pfd(pfds, i, &fd_count);
+                        close(senderfd);
+                    } else {
+                        printf("sender %d: %s\n", senderfd, buf);
+                    }
+                }
+            }
+        }
     }
-                
-                
-     
 
-
-
-            close(inc_fd);
-            exit(0);
-
-    
-    printf("received msg: %s\n", inc_msg);
-
-    close(fd);
-    free(res);
+    close(listenerfd);
+    free(pfds);
 
     return 0;
-}
-
-char* concat(const char *s1, const char *s2) {
-    char *result = malloc(strlen(s1) + strlen(s2) + 3); // +1 for the null-terminator
-    // in real code you would check for errors in malloc here
-    strcpy(result, s1);
-    strcat(result, "? ");
-    strcat(result, s2);
-    return result;
 }

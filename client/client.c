@@ -87,7 +87,7 @@ int main(int argc, char** argv)
             }
 
             if (pfds[i].revents & POLLIN) {
-                if (pfds[i].fd == FD_STDIN) { // if user input from stdin then we send data
+                if (pfds[i].fd == FD_STDIN) { // if data is from stdin then we send data
                     int msg_len;
 
                     memset(&buf, 0, sizeof buf);
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
                     printf("%s: %s\n", argv[1], buf);
                     msg_len = strlen(buf);
                     send(serverfd, buf, msg_len, 0);
-                } else { // if receive data from server socket then we display
+                } else { // if data is from server socket then we display
                     recv(serverfd, buf, BUF_SIZE, 0);
                     printf("chatgpt: %s\n", buf);
                 }
