@@ -7,7 +7,49 @@
 #include <unistd.h>
 #include <poll.h>
 
+#define PORT "3000"
+
+#define MAX_CONN 5
+
 char* concat(const char *s1, const char *s2);
+
+int get_listener_socket(char *port)
+{
+    int sock, rv;
+    struct addrinfo hints, *res, *p;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if ((rv = getaddrinfo(NULL, port, &hints, &res)) != 0) {
+        fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
+        exit(1);
+    }
+
+    for (p = res; p != NULL; p = p->ai_next) {
+        sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+
+        if (sock == -1) {
+            continue;
+        }
+
+        if (bind(sock, p->ai_addr, p->ai_addrlen) == -1) {
+            continue;
+        }
+
+        break;
+    }
+
+    if (listen(sock, MAX_CONN) == -1) {
+        return -1
+    }
+
+    free(res);
+
+    return sock;
+}
 
 int add_pfd(struct pollfd pfds[], int newfd, int *fd_count, int fd_size)
 {
@@ -29,74 +71,22 @@ void rm_pfd(struct pollfd pfds[], int i, int *fd_count)
 }
 
 int main() {
+
+    int listenerfd;
+    int fd_count = 0
+    int fd_size = MAX_CONN + 1;
+    struct pollfd *pdfs = malloc(sizeof(struct pollfd) * fd_size);
+
+    listenerfd = get_listener_socket(PORT);
+    pdfs = 
+
+
+
+
+    free(pdfs);
+
+
     
-    char * responses[] = {
-        "go google it",
-        "booking office for gondolas and punting is just on the right",
-        "move to melbourne and dont come back",
-        "without darkness there is no light",
-        "aot s2 is the best season change my mind",
-        "check out my tumblr"
-    };
-
-    srand(time(NULL));
-
-    const char *port = "3000";
-
-    struct addrinfo hints, *res, *p;
-    int status, fd;
-    char ipstring[INET6_ADDRSTRLEN];
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    status = getaddrinfo(NULL, port, &hints, &res);
-
-    struct sockaddr *sa = res->ai_addr;
-
-    if (res->ai_family == AF_INET) {
-        struct sockaddr_in *sin = (struct sockaddr_in *) sa;
-        inet_ntop(AF_INET, &(sin->sin_addr), ipstring, INET_ADDRSTRLEN);
-    } else if (res->ai_family == AF_INET6) {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) sa;
-        inet_ntop(AF_INET6, &(sin6->sin6_addr), ipstring, INET6_ADDRSTRLEN);
-    }
-
-    if (status == 0) {
-        printf("my ip: %s\n", ipstring);
-    }
-
-    for (p = res; p != NULL; p = p->ai_next) {
-        if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-            // error handling
-            continue;
-        }
-
-        if (bind(fd, p->ai_addr, p->ai_addrlen) == -1) {
-            // error handling
-            continue;
-        }
-
-        break;
-    }
-
-    if (listen(fd, 10) == 0) {
-        struct sockaddr *addr = p->ai_addr;
-        unsigned short port;
-        
-        if (p->ai_family == AF_INET) {
-            struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)addr;
-            port = ntohs(ipv4_addr->sin_port);
-        } else if (p->ai_family == AF_INET6) {
-            struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)addr;
-            port = ipv6_addr->sin6_port;
-        }
-        printf("listening on %d...\n", port);
-    } else {
-        //error handling
-    }
 
     int inc_fd;
     struct sockaddr_storage inc_addr;
