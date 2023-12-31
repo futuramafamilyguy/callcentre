@@ -72,6 +72,17 @@ void rm_pfd(struct pollfd pfds[], int i, int *fd_count)
     (*fd_count)--;
 }
 
+int valid_client_fd(struct pollfd pfds[], int fd, int fd_size)
+{
+    for (int i = 2; i < sizeof(struct pollfd) * fd_size; i++) { // start from 2 to skip stdin and listener fd
+        if (pfds[i].fd == fd) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 int main() {
 
     int listenerfd;
@@ -109,7 +120,33 @@ int main() {
                         printf("connections full so rejecting\n");
                         close(incfd);
                     }
+                } else if(pfds[i].fd == FD_STDIN) { // if data is from stdin then send to client
+                    int msg_len;
+
+                    memset(&buf, 0, sizeof buf);
+                    fgets(buf, sizeof(buf), stdin);
+                    if (buf[strlen(buf) - 1] == '\n') {
+                        buf[strlen(buf) - 1] = '\0';
+                    }
+
+                    char *targetfd_str = strtok(buf, " ");
+                    int targetfd = atoi(targetfd_str);
+                    if (targetfd == 0) {
+                        printf("invalid target fd %s. must be a nonzero int\n", targetfd_str);
+                        continue;
+                    }
+                    if (!valid_client_fd(pfds, targetfd, fd_size)) {
+                        printf("fd %d does not exist\n", targetfd);
+                        continue;
+                    }
+                    char *msg = strtok(NULL, "");
+
+                    printf("send to fd %d: %s\n", targetfd, msg);
+                    msg_len = strlen(msg);
+                    send(targetfd, msg, msg_len, 0);
                 } else { // if data is from client socket then display
+                    memset(&buf, 0, sizeof buf);
+
                     int senderfd = pfds[i].fd;
                     int bytes = recv(senderfd, buf, BUF_SIZE, 0);
 
