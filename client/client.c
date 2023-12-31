@@ -105,6 +105,7 @@ int main(int argc, char** argv)
                     msg_len = strlen(buf);
                     send(serverfd, buf, msg_len, 0);
                 } else { // if data is from server socket then we display
+                    memset(&buf, 0, sizeof buf);
                     recv(serverfd, buf, BUF_SIZE, 0);
                     printf("chatgpt: %s\n", buf);
                 }
