@@ -5,9 +5,28 @@
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
-#include <time.h>
+#include <poll.h>
 
 char* concat(const char *s1, const char *s2);
+
+int add_pfd(struct pollfd pfds[], int newfd, int *fd_count, int fd_size)
+{
+    if (*fd_count == *fd_size) {
+        return 1;
+    }
+
+    pfds[*fd_count].fd = newfd;
+    pfds[*fd_count].events = POLLIN;
+    (*fd_count)++;
+
+    return 0;
+}
+
+void rm_pfd(struct pollfd pfds[], int i, int *fd_count)
+{
+    pfds[i].fd = pfds[*fd_count - 1].fd;
+    (*fd_count)--;
+}
 
 int main() {
     
