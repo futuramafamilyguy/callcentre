@@ -66,10 +66,16 @@ int add_pfd(struct pollfd pfds[], int newfd, int *fd_count, int fd_size)
     return 0;
 }
 
-void rm_pfd(struct pollfd pfds[], int i, int *fd_count)
+int rm_pfd(struct pollfd pfds[], int i, int *fd_count)
 {
+    if (i >= *fd_count) {
+        return 1;
+    }
+
     pfds[i] = pfds[*fd_count - 1];
     (*fd_count)--;
+
+    return 0;
 }
 
 int valid_client_fd(struct pollfd pfds[], int fd, int fd_size)
@@ -83,12 +89,28 @@ int valid_client_fd(struct pollfd pfds[], int fd, int fd_size)
     return 0;
 }
 
-int main() {
+char* concat(const char *s1, const char *s2) {
+    char *result = malloc(strlen(s1) + strlen(s2) + 2); // +1 for the null-terminator
+    // in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, " ");
+    strcat(result, s2);
+    return result;
+}
+
+int main(int argc, char** argv)
+{
+    if (argc < 2) {
+        printf("missing argument\n");
+        exit(-1);
+    }
 
     int listenerfd;
     int fd_count = 0;
     int fd_size = MAX_CONN + 2; // 5 inc connections + listener and stdin
     struct pollfd *pfds = malloc(sizeof(struct pollfd) * fd_size);
+
+    char* username = argv[1];
 
     char buf[BUF_SIZE];
 
@@ -140,10 +162,13 @@ int main() {
                         continue;
                     }
                     char *msg = strtok(NULL, "");
+                    char *ccp_msg = concat(username, msg);
 
                     printf("send to fd %d: %s\n", targetfd, msg);
-                    msg_len = strlen(msg);
-                    send(targetfd, msg, msg_len, 0);
+                    msg_len = strlen(ccp_msg);
+                    send(targetfd, ccp_msg, msg_len, 0);
+
+                    free(ccp_msg);
                 } else { // if data is from client socket then display
                     memset(&buf, 0, sizeof buf);
 

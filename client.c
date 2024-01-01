@@ -53,8 +53,7 @@ int get_server_socket(char *host, char *port)
 }
 
 int main(int argc, char** argv)
-{
-    
+{ 
     if (argc < 2) {
         printf("missing argument\n");
         exit(-1);
@@ -111,7 +110,10 @@ int main(int argc, char** argv)
                         close(serverfd);
                         exit(0);
                     }
-                    printf("chatgpt: %s\n", buf);
+
+                    char *server_chat_name = strtok(buf, " ");
+                    char *msg = strtok(NULL, "");
+                    printf("%s: %s\n", server_chat_name, msg);
                 }
                 
                 poll_count--;
