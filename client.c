@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <poll.h>
+#include "ccp/ccp.h"
 
 #define HOST "localhost"
 #define PORT "3000"
@@ -111,8 +112,10 @@ int main(int argc, char** argv)
                         exit(0);
                     }
 
-                    char *server_chat_name = strtok(buf, " ");
-                    char *msg = strtok(NULL, "");
+                    char *server_chat_name;
+                    char *msg;
+                    parse_ccp(buf, server_chat_name, msg);
+                    
                     printf("%s: %s\n", server_chat_name, msg);
                 }
                 

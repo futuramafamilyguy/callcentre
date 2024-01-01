@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <poll.h>
+#include "ccp/ccp.h"
 
 #define PORT "3000"
 
@@ -89,15 +90,6 @@ int valid_client_fd(struct pollfd pfds[], int fd, int fd_size)
     return 0;
 }
 
-char* concat(const char *s1, const char *s2) {
-    char *result = malloc(strlen(s1) + strlen(s2) + 2); // +1 for the null-terminator
-    // in real code you would check for errors in malloc here
-    strcpy(result, s1);
-    strcat(result, " ");
-    strcat(result, s2);
-    return result;
-}
-
 int main(int argc, char** argv)
 {
     if (argc < 2) {
@@ -162,7 +154,8 @@ int main(int argc, char** argv)
                         continue;
                     }
                     char *msg = strtok(NULL, "");
-                    char *ccp_msg = concat(username, msg);
+                    char *ccp_msg;
+                    build_ccp(ccp_msg, username, msg);
 
                     printf("send to fd %d: %s\n", targetfd, msg);
                     msg_len = strlen(ccp_msg);
