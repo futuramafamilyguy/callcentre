@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 
                     char *server_chat_name;
                     char *msg;
-                    parse_ccp(buf, server_chat_name, msg);
+                    parse_ccp(buf, &server_chat_name, &msg);
                     
                     printf("%s: %s\n", server_chat_name, msg);
                 }

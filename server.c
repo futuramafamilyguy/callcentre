@@ -155,7 +155,7 @@ int main(int argc, char** argv)
                     }
                     char *msg = strtok(NULL, "");
                     char *ccp_msg;
-                    build_ccp(ccp_msg, username, msg);
+                    build_ccp(&ccp_msg, username, msg);
 
                     printf("send to fd %d: %s\n", targetfd, msg);
                     msg_len = strlen(ccp_msg);
