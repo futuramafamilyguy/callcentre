@@ -176,6 +176,8 @@ int main(int argc, char** argv)
                         printf("sender %d: %s\n", senderfd, buf);
                     }
                 }
+
+                poll_count--;
             }
         }
     }
